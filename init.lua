@@ -1,6 +1,7 @@
 -- Set <space> as the leader key
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
+
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
@@ -271,8 +272,117 @@ require('lazy').setup({
     end,
   },
 
-  -- LSP Plugins
   {
+    'zbirenbaum/copilot.lua',
+    cmd = 'Copilot',
+    event = 'InsertEnter',
+    config = function()
+      require('copilot').setup {
+        suggestion = { enabled = true },
+        panel = { enabled = false },
+      }
+    end,
+  },
+
+  {
+    'hrsh7th/nvim-cmp',
+    event = 'InsertEnter',
+    dependencies = {
+      'hrsh7th/cmp-buffer',
+      'hrsh7th/cmp-path',
+      'hrsh7th/cmp-nvim-lsp',
+      'saadparwaiz1/cmp_luasnip',
+      'L3MON4D3/LuaSnip',
+      'zbirenbaum/copilot-cmp',
+    },
+    config = function()
+      local cmp = require 'cmp'
+      local luasnip = require 'luasnip'
+      require('copilot_cmp').setup()
+
+      cmp.setup {
+        snippet = {
+          expand = function(args)
+            luasnip.lsp_expand(args.body)
+          end,
+        },
+        mapping = cmp.mapping.preset.insert {
+          -- Scroll docs in the documentation window
+          ['<C-u>'] = cmp.mapping.scroll_docs(-4),
+          ['<C-d>'] = cmp.mapping.scroll_docs(4),
+
+          -- Open completion menu manually
+          ['<C-Space>'] = cmp.mapping.complete(),
+
+          -- Navigate suggestions
+          ['<C-n>'] = cmp.mapping.select_next_item(),
+          ['<C-p>'] = cmp.mapping.select_prev_item(),
+
+          -- Confirm selection
+          ['<C-y>'] = cmp.mapping.confirm { select = true },
+
+          -- Abort completion
+          ['<C-e>'] = cmp.mapping.abort(),
+        },
+        sources = cmp.config.sources {
+          { name = 'copilot' },
+          { name = 'nvim_lsp' },
+          { name = 'luasnip' },
+          { name = 'buffer' },
+          { name = 'path' },
+        },
+        sorting = {
+          priority_weight = 2,
+          comparators = {
+            require('copilot_cmp.comparators').prioritize,
+            cmp.config.compare.offset,
+            cmp.config.compare.exact,
+            cmp.config.compare.score,
+            cmp.config.compare.kind,
+            cmp.config.compare.sort_text,
+            cmp.config.compare.length,
+            cmp.config.compare.order,
+          },
+        },
+      }
+      -- lsp configuration
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+      local lspconfig = require 'lspconfig'
+      lspconfig.pyright.setup {
+        capabilities = capabilities,
+      }
+      lspconfig.ts_ls.setup {
+        capabilities = capabilities,
+      }
+      lspconfig.vuels.setup {
+        capabilities = capabilities,
+      }
+      lspconfig.cssls.setup {
+        capabilities = capabilities,
+      }
+      lspconfig.jsonls.setup {
+        capabilities = capabilities,
+      }
+      lspconfig.html.setup {
+        capabilities = capabilities,
+      }
+      lspconfig.lua_ls.setup {
+        capabilities = capabilities,
+        settings = {
+          Lua = {
+            diagnostics = {
+              globals = { 'vim' }, -- Recognize 'vim' as a global variable
+            },
+            workspace = {
+              checkThirdParty = false, -- Disable third-party checks
+            },
+          },
+        },
+      }
+    end,
+  },
+
+  { -- LSP Plugins
     'folke/lazydev.nvim',
     ft = 'lua',
     opts = {
@@ -281,6 +391,7 @@ require('lazy').setup({
       },
     },
   },
+
   {
     'neovim/nvim-lspconfig',
     dependencies = {
@@ -288,7 +399,6 @@ require('lazy').setup({
       'mason-org/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
       { 'j-hui/fidget.nvim', opts = {} },
-      'saghen/blink.cmp',
     },
     config = function()
       vim.api.nvim_create_autocmd('LspAttach', {
@@ -376,7 +486,6 @@ require('lazy').setup({
         },
       }
 
-      local capabilities = require('blink.cmp').get_lsp_capabilities()
       local servers = {
         -- Python/Django support
         pyright = {
@@ -612,51 +721,6 @@ require('lazy').setup({
         json = { 'prettier' },
         jsonc = { 'prettier' },
       },
-    },
-  },
-
-  { -- Autocompletion
-    'saghen/blink.cmp',
-    event = 'VimEnter',
-    version = '1.*',
-    dependencies = {
-      {
-        'L3MON4D3/LuaSnip',
-        version = '2.*',
-        build = (function()
-          if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then
-            return
-          end
-          return 'make install_jsregexp'
-        end)(),
-        dependencies = {},
-        opts = {},
-      },
-      'folke/lazydev.nvim',
-    },
-    opts = {
-      keymap = {
-        preset = 'default',
-      },
-
-      appearance = {
-        nerd_font_variant = 'mono',
-      },
-
-      completion = {
-        documentation = { auto_show = false, auto_show_delay_ms = 500 },
-      },
-
-      sources = {
-        default = { 'lsp', 'path', 'snippets', 'lazydev' },
-        providers = {
-          lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
-        },
-      },
-
-      snippets = { preset = 'luasnip' },
-      fuzzy = { implementation = 'lua' },
-      signature = { enabled = true },
     },
   },
 
