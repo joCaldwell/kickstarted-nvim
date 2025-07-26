@@ -67,7 +67,7 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.opt_local.shiftwidth = 4
     vim.opt_local.tabstop = 4
     vim.opt_local.softtabstop = 4
-    vim.opt_local.textwidth = 88  -- Black default line length
+    vim.opt_local.textwidth = 88 -- Black default line length
   end,
 })
 
@@ -399,7 +399,7 @@ require('lazy').setup({
         },
 
         -- JavaScript/TypeScript support (for Vue)
-        tsserver = {
+        ts_ls = {
           settings = {
             typescript = {
               inlayHints = {
@@ -540,19 +540,19 @@ require('lazy').setup({
 
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        'stylua', -- Used to format Lua code
-        'black', -- Python formatter
-        'isort', -- Python import sorter
-        'flake8', -- Python linter
-        'prettier', -- JavaScript/TypeScript/CSS/HTML formatter
-        'eslint_d', -- JavaScript/TypeScript linter
-        'stylelint', -- CSS/SCSS linter
-        'json-lsp', -- JSON language server
-        'html-lsp', -- HTML language server
-        'css-lsp', -- CSS language server
-        'typescript-language-server', -- TypeScript language server
-        'vue-language-server', -- Vue language server
-        'pyright', -- Python language server
+        'stylua',
+        'black',
+        'isort',
+        'flake8',
+        'prettier',
+        'eslint_d',
+        'stylelint',
+        'html',
+        'cssls',
+        'ts_ls',
+        'lua_ls',
+        'jsonls',
+        'vuels',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -756,14 +756,22 @@ require('lazy').setup({
 
         -- Navigation
         map('n', ']c', function()
-          if vim.wo.diff then return ']c' end
-          vim.schedule(function() gs.next_hunk() end)
+          if vim.wo.diff then
+            return ']c'
+          end
+          vim.schedule(function()
+            gs.next_hunk()
+          end)
           return '<Ignore>'
         end, { expr = true })
 
         map('n', '[c', function()
-          if vim.wo.diff then return '[c' end
-          vim.schedule(function() gs.prev_hunk() end)
+          if vim.wo.diff then
+            return '[c'
+          end
+          vim.schedule(function()
+            gs.prev_hunk()
+          end)
           return '<Ignore>'
         end, { expr = true })
 
@@ -774,15 +782,19 @@ require('lazy').setup({
         map('n', '<leader>hu', gs.undo_stage_hunk)
         map('n', '<leader>hR', gs.reset_buffer)
         map('n', '<leader>hp', gs.preview_hunk)
-        map('n', '<leader>hb', function() gs.blame_line { full = true } end)
+        map('n', '<leader>hb', function()
+          gs.blame_line { full = true }
+        end)
         map('n', '<leader>tb', gs.toggle_current_line_blame)
         map('n', '<leader>hd', gs.diffthis)
-        map('n', '<leader>hD', function() gs.diffthis('~') end)
+        map('n', '<leader>hD', function()
+          gs.diffthis '~'
+        end)
         map('n', '<leader>td', gs.toggle_deleted)
 
         -- Text object
         map({ 'o', 'x' }, 'ih', ':<C-U>Gitsigns select_hunk<CR>')
-      end
+      end,
     },
   },
   { -- Treesitter
@@ -790,10 +802,32 @@ require('lazy').setup({
     build = ':TSUpdate',
     main = 'nvim-treesitter.configs',
     opts = {
-      ensure_installed = { 
-        'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc',
-        'python', 'javascript', 'typescript', 'jsx', 'tsx', 'vue', 'css', 'scss', 'sass', 'json', 'jsonc',
-        'yaml', 'toml', 'dockerfile', 'gitignore', 'comment'
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'python',
+        'javascript',
+        'typescript',
+        'tsx',
+        'vue',
+        'css',
+        'scss',
+        'json',
+        'jsonc',
+        'yaml',
+        'toml',
+        'dockerfile',
+        'gitignore',
+        'comment',
       },
       auto_install = true,
       highlight = {
@@ -803,8 +837,6 @@ require('lazy').setup({
       indent = { enable = true, disable = { 'ruby' } },
     },
   },
-
-
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
