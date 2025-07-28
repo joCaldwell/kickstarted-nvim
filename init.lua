@@ -1,7 +1,6 @@
 -- Set <space> as the leader key
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
-
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
@@ -39,7 +38,7 @@ vim.api.nvim_create_autocmd('FileType', {
 
 -- 2-space indentation for others
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'html', 'css', 'scss', 'sass', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact', 'vue', 'json', 'jsonc' },
+  pattern = { 'html', 'css', 'scss', 'sass', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact', 'vue', 'json', 'jsonc', 'lua' },
   callback = function()
     vim.opt_local.expandtab = true
     vim.opt_local.shiftwidth = 2
@@ -150,6 +149,22 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- Open terminal in a split window on the bottom with no line numbers
+vim.api.nvim_create_autocmd('TermOpen', {
+  group = vim.api.nvim_create_augroup('cutom-term-open', { clear = true }),
+  callback = function()
+    vim.opt.number = false
+    vim.opt.relativenumber = false
+  end,
+})
+
+vim.keymap.set('n', '<leader>tt', function()
+  -- Open terminal in a split window on the bottom
+  vim.cmd.new()
+  vim.cmd.term()
+  vim.api.nvim_win_set_height(0, 15) -- Set terminal height to 15 lines
+end, { desc = '[T]erminal' })
+
 -- Install lazy.nvim plugin manager
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -160,59 +175,17 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end
 
+-- Themes
+local current_theme = 'tokyonight'
+local theme = require('themes.' .. current_theme)
+
 ---@type vim.Option
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
 -- Configure and install plugins
 require('lazy').setup({
-
-  { -- Which-key for keybind discovery
-    'folke/which-key.nvim',
-    event = 'VimEnter',
-    opts = {
-      delay = 0,
-      icons = {
-        mappings = vim.g.have_nerd_font,
-        keys = vim.g.have_nerd_font and {} or {
-          Up = '<Up> ',
-          Down = '<Down> ',
-          Left = '<Left> ',
-          Right = '<Right> ',
-          C = '<C-…> ',
-          M = '<M-…> ',
-          D = '<D-…> ',
-          S = '<S-…> ',
-          CR = '<CR> ',
-          Esc = '<Esc> ',
-          ScrollWheelDown = '<ScrollWheelDown> ',
-          ScrollWheelUp = '<ScrollWheelUp> ',
-          NL = '<NL> ',
-          BS = '<BS> ',
-          Space = '<Space> ',
-          Tab = '<Tab> ',
-          F1 = '<F1>',
-          F2 = '<F2>',
-          F3 = '<F3>',
-          F4 = '<F4>',
-          F5 = '<F5>',
-          F6 = '<F6>',
-          F7 = '<F7>',
-          F8 = '<F8>',
-          F9 = '<F9>',
-          F10 = '<F10>',
-          F11 = '<F11>',
-          F12 = '<F12>',
-        },
-      },
-      spec = {
-        { '<leader>s', group = '[S]earch' },
-        { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
-      },
-    },
-  },
-
+  theme,
   { -- Fuzzy finder
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
@@ -632,16 +605,11 @@ require('lazy').setup({
 
         -- Lua support (for Neovim config)
         lua_ls = {
-          -- cmd = { ... },
-          -- filetypes = { ... },
-          -- capabilities = {},
           settings = {
             Lua = {
               completion = {
                 callSnippet = 'Replace',
               },
-              -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-              -- diagnostics = { disable = { 'missing-fields' } },
             },
           },
         },
@@ -724,37 +692,7 @@ require('lazy').setup({
     },
   },
 
-  { -- Colorscheme
-    'folke/tokyonight.nvim',
-    priority = 1000,
-    config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false },
-        },
-      }
-      vim.cmd.colorscheme 'tokyonight-night'
-    end,
-  },
-
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
-
-  { -- Mini plugins
-    'echasnovski/mini.nvim',
-    config = function()
-      require('mini.ai').setup { n_lines = 500 }
-      require('mini.surround').setup()
-
-      local statusline = require 'mini.statusline'
-      statusline.setup { use_icons = vim.g.have_nerd_font }
-
-      ---@diagnostic disable-next-line: duplicate-set-field
-      statusline.section_location = function()
-        return '%2l:%-2v'
-      end
-    end,
-  },
 
   -- Django and Python development helpers
   { -- Python docstring generator
@@ -861,6 +799,7 @@ require('lazy').setup({
       end,
     },
   },
+
   { -- Treesitter
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
@@ -901,6 +840,8 @@ require('lazy').setup({
       indent = { enable = true, disable = { 'ruby' } },
     },
   },
+
+  { import = 'plugins' }, -- Load plugins from a separate file
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
@@ -920,5 +861,3 @@ require('lazy').setup({
     },
   },
 })
-
--- vim: ts=2 sts=2 sw=2 et
