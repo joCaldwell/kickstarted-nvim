@@ -1,33 +1,40 @@
--- Set <space> as the leader key
---  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
+-- GLOBAL OPTIONS
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
-
--- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
 
--- Make line numbers default
-vim.o.number = true
--- Enable mouse mode, can be useful for resizing splits for example!
-vim.o.mouse = 'a'
-
--- Don't show the mode, since it's already in the status line
-vim.o.showmode = false
-
--- Sync clipboard between OS and Neovim.
-vim.schedule(function()
-  vim.o.clipboard = 'unnamedplus'
-end)
-
--- Default tabs and spaces config (Spaces when I press tab)
+-- LOCAL OPTIOINS
+vim.opt.number = true
+vim.opt.mouse = 'a'
+vim.opt.showmode = false
 vim.opt.expandtab = true -- Use spaces instead of tabs
 vim.opt.shiftwidth = 4 -- Number of spaces for indent
 vim.opt.tabstop = 4 -- Number of spaces for a tab
 vim.opt.softtabstop = 4 -- Number of spaces for <Tab> in insert mode
+vim.opt.breakindent = true
+vim.opt.formatoptions:remove { 'r', 'o' } -- Don't auto comment new lines
+vim.opt.undofile = true
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.opt.signcolumn = 'yes' -- Always show the sign column
+vim.opt.updatetime = 250 -- Time in ms to wait in ms before triggering CursorHold events
+vim.opt.timeoutlen = 300 -- Time to wait in ms for a mapped sequence to complete
+vim.opt.splitright = true -- New splits open to the right
+vim.opt.splitbelow = true -- New splits open to the below
+vim.opt.list = true -- Show whitespace characters
+vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' } -- Show special characters for tabs, trailing spaces, and non-breaking spaces
+vim.opt.inccommand = 'split' -- Show live substitutions in a split
+vim.opt.cursorline = true -- Highlight the line under the cursor
+vim.opt.scrolloff = 10 -- Keep 10 lines visible above/below cursor
+vim.opt.confirm = true -- Confirm quitting without saving
+
+vim.schedule(function()
+  vim.o.clipboard = 'unnamedplus'
+end)
 
 -- 4-space indentation for some languages
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'python', 'lua', 'javascript', 'json' },
+  pattern = { 'javascript', 'json' },
   callback = function()
     vim.opt_local.expandtab = true
     vim.opt_local.shiftwidth = 4
@@ -70,51 +77,9 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.opt_local.textwidth = 88 -- Black default line length
   end,
 })
-
--- Enable break indent
-vim.o.breakindent = true
-
--- Save undo history
-vim.o.undofile = true
-
--- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
-vim.o.ignorecase = true
-vim.o.smartcase = true
-
--- Keep signcolumn on by default
-vim.o.signcolumn = 'yes'
-
--- Decrease update time
-vim.o.updatetime = 250
-
--- Decrease mapped sequence wait time
-vim.o.timeoutlen = 300
-
--- Configure how new splits should be opened
-vim.o.splitright = true
-vim.o.splitbelow = true
-
--- Sets how neovim will display certain whitespace characters in the editor.
-vim.o.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
-
-vim.o.inccommand = 'split'
-vim.o.cursorline = true
-vim.o.scrolloff = 10
-vim.o.confirm = true
-
 -- Basic keymaps
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-
--- Django and Python development keymaps
-vim.keymap.set('n', '<leader>pd', '<cmd>Pydocstring<CR>', { desc = '[P]ython [D]ocstring' })
-vim.keymap.set('n', '<leader>pf', '<cmd>!python -m black %<CR>', { desc = '[P]ython [F]ormat with black' })
-vim.keymap.set('n', '<leader>pi', '<cmd>!python -m isort %<CR>', { desc = '[P]ython [I]mport sort' })
-
--- Frontend development keymaps
-vim.keymap.set('n', '<leader>ff', '<cmd>!npx prettier --write %<CR>', { desc = '[F]rontend [F]ormat with prettier' })
-vim.keymap.set('n', '<leader>fe', '<cmd>Emmet<CR>', { desc = '[F]rontend [E]mmet' })
 
 -- Quick file navigation for Django projects
 vim.keymap.set('n', '<leader>fm', '<cmd>Telescope find_files search_dirs={"models"}<CR>', { desc = '[F]ind [M]odels' })
@@ -149,6 +114,39 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- Install LSP servers with Mason
+vim.api.nvim_create_user_command('InstallLspServers', function()
+  local servers = {
+    -- Linters and formatters
+    'stylua',
+    'black',
+    'isort',
+    'flake8',
+    'prettier',
+    'eslint_d',
+    'stylelint',
+
+    -- Language servers
+    'pyright',
+    'ts_ls',
+    'vuels',
+    'cssls',
+    'jsonls',
+    'html',
+    'lua_ls',
+  }
+
+  print 'Installing LSP servers via Mason...'
+  for _, server in ipairs(servers) do
+    if not vim.fn.executable(server) then
+      print('Installing ' .. server .. '...')
+      vim.cmd('MasonInstall ' .. server)
+    else
+      print(server .. ' is already installed.')
+    end
+  end
+end, {})
+
 -- Open terminal in a split window on the bottom with no line numbers
 vim.api.nvim_create_autocmd('TermOpen', {
   group = vim.api.nvim_create_augroup('cutom-term-open', { clear = true }),
@@ -175,203 +173,21 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end
 
--- Themes
-local current_theme = 'tokyonight'
-local theme = require('themes.' .. current_theme)
-
 ---@type vim.Option
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
+-- TODO: Write a script to manage the theme
+local theme = require 'themes.tokyonight'
+
 -- Configure and install plugins
 require('lazy').setup({
   theme,
-  { -- Fuzzy finder
-    'nvim-telescope/telescope.nvim',
-    event = 'VimEnter',
-    dependencies = {
-      'nvim-lua/plenary.nvim',
-      { -- FZF native for better performance
-        'nvim-telescope/telescope-fzf-native.nvim',
-        build = 'make',
-        cond = function()
-          return vim.fn.executable 'make' == 1
-        end,
-      },
-      { 'nvim-telescope/telescope-ui-select.nvim' },
-      { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
-    },
-    config = function()
-      require('telescope').setup {
-        extensions = {
-          ['ui-select'] = {
-            require('telescope.themes').get_dropdown(),
-          },
-        },
-      }
-
-      pcall(require('telescope').load_extension, 'fzf')
-      pcall(require('telescope').load_extension, 'ui-select')
-
-      local builtin = require 'telescope.builtin'
-      vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
-      vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-      vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-      vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
-      vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-      vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-      vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-      vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
-
-      vim.keymap.set('n', '<leader>/', function()
-        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-          winblend = 10,
-          previewer = false,
-        })
-      end, { desc = '[/] Fuzzily search in current buffer' })
-
-      vim.keymap.set('n', '<leader>s/', function()
-        builtin.live_grep {
-          grep_open_files = true,
-          prompt_title = 'Live Grep in Open Files',
-        }
-      end, { desc = '[S]earch [/] in Open Files' })
-
-      vim.keymap.set('n', '<leader>sn', function()
-        builtin.find_files { cwd = vim.fn.stdpath 'config' }
-      end, { desc = '[S]earch [N]eovim files' })
-    end,
-  },
-
-  {
-    'zbirenbaum/copilot.lua',
-    cmd = 'Copilot',
-    event = 'InsertEnter',
-    config = function()
-      require('copilot').setup {
-        suggestion = { enabled = true },
-        panel = { enabled = false },
-      }
-    end,
-  },
-
-  {
-    'hrsh7th/nvim-cmp',
-    event = 'InsertEnter',
-    dependencies = {
-      'hrsh7th/cmp-buffer',
-      'hrsh7th/cmp-path',
-      'hrsh7th/cmp-nvim-lsp',
-      'saadparwaiz1/cmp_luasnip',
-      'L3MON4D3/LuaSnip',
-      'zbirenbaum/copilot-cmp',
-    },
-    config = function()
-      local cmp = require 'cmp'
-      local luasnip = require 'luasnip'
-      require('copilot_cmp').setup()
-
-      cmp.setup {
-        snippet = {
-          expand = function(args)
-            luasnip.lsp_expand(args.body)
-          end,
-        },
-        mapping = cmp.mapping.preset.insert {
-          -- Scroll docs in the documentation window
-          ['<C-u>'] = cmp.mapping.scroll_docs(-4),
-          ['<C-d>'] = cmp.mapping.scroll_docs(4),
-
-          -- Open completion menu manually
-          ['<C-Space>'] = cmp.mapping.complete(),
-
-          -- Navigate suggestions
-          ['<C-n>'] = cmp.mapping.select_next_item(),
-          ['<C-p>'] = cmp.mapping.select_prev_item(),
-
-          -- Confirm selection
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
-
-          -- Abort completion
-          ['<C-e>'] = cmp.mapping.abort(),
-        },
-        sources = cmp.config.sources {
-          { name = 'copilot' },
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' },
-          { name = 'buffer' },
-          { name = 'path' },
-        },
-        sorting = {
-          priority_weight = 2,
-          comparators = {
-            require('copilot_cmp.comparators').prioritize,
-            cmp.config.compare.offset,
-            cmp.config.compare.exact,
-            cmp.config.compare.score,
-            cmp.config.compare.kind,
-            cmp.config.compare.sort_text,
-            cmp.config.compare.length,
-            cmp.config.compare.order,
-          },
-        },
-      }
-      -- lsp configuration
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      local lspconfig = require 'lspconfig'
-      lspconfig.pyright.setup {
-        capabilities = capabilities,
-      }
-      lspconfig.ts_ls.setup {
-        capabilities = capabilities,
-      }
-      lspconfig.vuels.setup {
-        capabilities = capabilities,
-      }
-      lspconfig.cssls.setup {
-        capabilities = capabilities,
-      }
-      lspconfig.jsonls.setup {
-        capabilities = capabilities,
-      }
-      lspconfig.html.setup {
-        capabilities = capabilities,
-      }
-      lspconfig.lua_ls.setup {
-        capabilities = capabilities,
-        settings = {
-          Lua = {
-            diagnostics = {
-              globals = { 'vim' }, -- Recognize 'vim' as a global variable
-            },
-            workspace = {
-              checkThirdParty = false, -- Disable third-party checks
-            },
-          },
-        },
-      }
-    end,
-  },
-
-  { -- LSP Plugins
-    'folke/lazydev.nvim',
-    ft = 'lua',
-    opts = {
-      library = {
-        { path = '${3rd}/luv/library', words = { 'vim%.uv' } },
-      },
-    },
-  },
-
   {
     'neovim/nvim-lspconfig',
     dependencies = {
       { 'mason-org/mason.nvim', opts = {} },
-      'mason-org/mason-lspconfig.nvim',
-      'WhoIsSethDaniel/mason-tool-installer.nvim',
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim', opts = {} }, -- notification on startup
     },
     config = function()
       vim.api.nvim_create_autocmd('LspAttach', {
@@ -459,386 +275,180 @@ require('lazy').setup({
         },
       }
 
-      local servers = {
-        -- Python/Django support
-        pyright = {
-          settings = {
-            python = {
-              analysis = {
-                autoImportCompletions = true,
-                typeCheckingMode = 'basic',
-                useLibraryCodeForTypes = true,
-                diagnosticMode = 'workspace',
-                inlayHints = {
-                  functionReturnTypes = true,
-                  variableTypes = true,
-                  parameterTypes = true,
-                },
-              },
-              pythonPath = 'python',
-            },
-          },
-        },
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+      local lspconfig = require 'lspconfig'
 
-        -- JavaScript/TypeScript support (for Vue)
-        ts_ls = {
-          settings = {
-            typescript = {
-              inlayHints = {
-                includeInlayParameterNameHints = 'all',
-                includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-                includeInlayFunctionParameterTypeHints = true,
-                includeInlayVariableTypeHints = true,
-                includeInlayPropertyDeclarationTypeHints = true,
-                includeInlayFunctionLikeReturnTypeHints = true,
-                includeInlayEnumMemberValueHints = true,
-              },
-            },
-            javascript = {
-              inlayHints = {
-                includeInlayParameterNameHints = 'all',
-                includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-                includeInlayFunctionParameterTypeHints = true,
-                includeInlayVariableTypeHints = true,
-                includeInlayPropertyDeclarationTypeHints = true,
-                includeInlayFunctionLikeReturnTypeHints = true,
-                includeInlayEnumMemberValueHints = true,
-              },
-            },
-          },
-        },
-
-        -- Vue support
-        vuels = {
-          settings = {
-            vetur = {
-              validation = {
-                template = true,
-                script = true,
-                style = true,
-              },
-              useWorkspaceDependencies = true,
-              completion = {
-                autoImport = true,
-                tagCasing = 'kebab',
-              },
-            },
-          },
-        },
-
-        -- CSS/SASS support
-        cssls = {
-          settings = {
-            css = {
-              validate = true,
-              lint = {
-                unknownAtRules = 'ignore',
+      -- Python/Django support
+      lspconfig.pyright.setup {
+        capabilities = capabilities,
+        settings = {
+          python = {
+            -- This should be set by your Docker functions, but fallback to local python
+            pythonPath = vim.g.python3_host_prog or vim.fn.exepath 'python3' or vim.fn.exepath 'python',
+            analysis = {
+              autoImportCompletions = true,
+              typeCheckingMode = 'basic',
+              useLibraryCodeForTypes = true,
+              diagnosticMode = 'workspace',
+              autoSearchPaths = true,
+              extraPaths = {
+                './',
+                './apps/',
               },
               inlayHints = {
-                enabled = true,
-              },
-            },
-            scss = {
-              validate = true,
-              lint = {
-                unknownAtRules = 'ignore',
-              },
-              inlayHints = {
-                enabled = true,
-              },
-            },
-            less = {
-              validate = true,
-              lint = {
-                unknownAtRules = 'ignore',
-              },
-              inlayHints = {
-                enabled = true,
-              },
-            },
-          },
-        },
-
-        -- JSON support
-        jsonls = {
-          settings = {
-            json = {
-              schemas = {
-                {
-                  fileMatch = { 'package.json' },
-                  url = 'https://json.schemastore.org/package.json',
-                },
-                {
-                  fileMatch = { 'tsconfig.json', 'tsconfig.*.json' },
-                  url = 'https://json.schemastore.org/tsconfig.json',
-                },
-                {
-                  fileMatch = { '*.vue' },
-                  url = 'https://json.schemastore.org/vue.json',
-                },
-                {
-                  fileMatch = { 'pyproject.toml' },
-                  url = 'https://json.schemastore.org/pyproject.json',
-                },
-              },
-              validate = { enable = true },
-              format = { enable = true },
-            },
-          },
-        },
-
-        -- HTML support
-        html = {
-          settings = {
-            html = {
-              format = {
-                templating = true,
-                wrapLineLength = 120,
-                wrapAttributes = 'auto',
-              },
-              suggest = {
-                html5 = true,
-              },
-            },
-          },
-        },
-
-        -- Lua support (for Neovim config)
-        lua_ls = {
-          settings = {
-            Lua = {
-              completion = {
-                callSnippet = 'Replace',
+                functionReturnTypes = true,
+                variableTypes = true,
+                parameterTypes = true,
               },
             },
           },
         },
       }
 
-      local ensure_installed = vim.tbl_keys(servers or {})
-      vim.list_extend(ensure_installed, {
-        'stylua',
-        'black',
-        'isort',
-        'flake8',
-        'prettier',
-        'eslint_d',
-        'stylelint',
-        'html',
-        'cssls',
-        'ts_ls',
-        'lua_ls',
-        'jsonls',
-        'vuels',
-      })
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      -- JavaScript/TypeScript support (for Vue)
+      lspconfig.ts_ls.setup {
+        capabilities = capabilities,
+        settings = {
+          typescript = {
+            inlayHints = {
+              includeInlayParameterNameHints = 'all',
+              includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+              includeInlayFunctionParameterTypeHints = true,
+              includeInlayVariableTypeHints = true,
+              includeInlayPropertyDeclarationTypeHints = true,
+              includeInlayFunctionLikeReturnTypeHints = true,
+              includeInlayEnumMemberValueHints = true,
+            },
+          },
+          javascript = {
+            inlayHints = {
+              includeInlayParameterNameHints = 'all',
+              includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+              includeInlayFunctionParameterTypeHints = true,
+              includeInlayVariableTypeHints = true,
+              includeInlayPropertyDeclarationTypeHints = true,
+              includeInlayFunctionLikeReturnTypeHints = true,
+              includeInlayEnumMemberValueHints = true,
+            },
+          },
+        },
+      }
 
-      require('mason-lspconfig').setup {
-        ensure_installed = {},
-        automatic_installation = false,
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
+      -- Vue support
+      lspconfig.vuels.setup {
+        capabilities = capabilities,
+        settings = {
+          vetur = {
+            validation = {
+              template = true,
+              script = true,
+              style = true,
+            },
+            useWorkspaceDependencies = true,
+            completion = {
+              autoImport = true,
+              tagCasing = 'kebab',
+            },
+          },
+        },
+      }
+
+      -- CSS/SASS support
+      lspconfig.cssls.setup {
+        capabilities = capabilities,
+        settings = {
+          css = {
+            validate = true,
+            lint = {
+              unknownAtRules = 'ignore',
+            },
+            inlayHints = {
+              enabled = true,
+            },
+          },
+          scss = {
+            validate = true,
+            lint = {
+              unknownAtRules = 'ignore',
+            },
+            inlayHints = {
+              enabled = true,
+            },
+          },
+          less = {
+            validate = true,
+            lint = {
+              unknownAtRules = 'ignore',
+            },
+            inlayHints = {
+              enabled = true,
+            },
+          },
+        },
+      }
+
+      -- JSON support
+      lspconfig.jsonls.setup {
+        capabilities = capabilities,
+        settings = {
+          json = {
+            schemas = {
+              {
+                fileMatch = { 'package.json' },
+                url = 'https://json.schemastore.org/package.json',
+              },
+              {
+                fileMatch = { 'tsconfig.json', 'tsconfig.*.json' },
+                url = 'https://json.schemastore.org/tsconfig.json',
+              },
+              {
+                fileMatch = { '*.vue' },
+                url = 'https://json.schemastore.org/vue.json',
+              },
+              {
+                fileMatch = { 'pyproject.toml' },
+                url = 'https://json.schemastore.org/pyproject.json',
+              },
+            },
+            validate = { enable = true },
+            format = { enable = true },
+          },
+        },
+      }
+
+      -- HTML support
+      lspconfig.html.setup {
+        capabilities = capabilities,
+        settings = {
+          html = {
+            format = {
+              templating = true,
+              wrapLineLength = 120,
+              wrapAttributes = 'auto',
+            },
+            suggest = {
+              html5 = true,
+            },
+          },
+        },
+      }
+
+      -- Lua support (for Neovim config)
+      lspconfig.lua_ls.setup {
+        capabilities = capabilities,
+        settings = {
+          Lua = {
+            completion = {
+              callSnippet = 'Replace',
+            },
+            diagnostics = {
+              globals = { 'vim' },
+              disable = { 'lowercase-global', 'trailing-space', 'unused-local' },
+            },
+          },
         },
       }
     end,
-  },
-
-  { -- Autoformat
-    'stevearc/conform.nvim',
-    event = { 'BufWritePre' },
-    cmd = { 'ConformInfo' },
-    keys = {
-      {
-        '<leader>f',
-        function()
-          require('conform').format { async = true, lsp_format = 'fallback' }
-        end,
-        mode = '',
-        desc = '[F]ormat buffer',
-      },
-    },
-    opts = {
-      notify_on_error = false,
-      format_on_save = function(bufnr)
-        local disable_filetypes = { c = true, cpp = true }
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          return nil
-        else
-          return {
-            timeout_ms = 500,
-            lsp_format = 'fallback',
-          }
-        end
-      end,
-      formatters_by_ft = {
-        lua = { 'stylua' },
-        python = { 'isort', 'black' },
-        javascript = { 'prettier' },
-        typescript = { 'prettier' },
-        javascriptreact = { 'prettier' },
-        typescriptreact = { 'prettier' },
-        vue = { 'prettier' },
-        css = { 'prettier' },
-        scss = { 'prettier' },
-        sass = { 'prettier' },
-        html = { 'prettier' },
-        json = { 'prettier' },
-        jsonc = { 'prettier' },
-      },
-    },
-  },
-
-  { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
-
-  -- Django and Python development helpers
-  { -- Python docstring generator
-    'heavenshell/vim-pydocstring',
-    build = 'make install',
-    ft = 'python',
-    config = function()
-      vim.g.pydocstring_formatter = 'google'
-      vim.g.pydocstring_doq_path = 'doq'
-    end,
-  },
-
-  { -- Better Python indentation
-    'Vimjas/vim-python-pep8-indent',
-    ft = 'python',
-  },
-
-  { -- Django template syntax highlighting
-    'tweekmonster/django-plus.vim',
-    ft = { 'html', 'htmldjango' },
-  },
-
-  -- Frontend development helpers
-  { -- Emmet support for HTML/CSS
-    'mattn/emmet-vim',
-    ft = { 'html', 'css', 'scss', 'sass', 'vue', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact' },
-    config = function()
-      vim.g.user_emmet_leader_key = '<C-e>'
-      vim.g.user_emmet_settings = {
-        javascript = {
-          extends = 'jsx',
-        },
-        typescript = {
-          extends = 'tsx',
-        },
-      }
-    end,
-  },
-
-  { -- Better JSON handling
-    'b0o/schemastore.nvim',
-    ft = { 'json', 'jsonc' },
-  },
-
-  { -- Git integration
-    'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-      on_attach = function(bufnr)
-        local gs = package.loaded.gitsigns
-
-        local function map(mode, l, r, opts)
-          opts = opts or {}
-          opts.buffer = bufnr
-          vim.keymap.set(mode, l, r, opts)
-        end
-
-        -- Navigation
-        map('n', ']c', function()
-          if vim.wo.diff then
-            return ']c'
-          end
-          vim.schedule(function()
-            gs.next_hunk()
-          end)
-          return '<Ignore>'
-        end, { expr = true })
-
-        map('n', '[c', function()
-          if vim.wo.diff then
-            return '[c'
-          end
-          vim.schedule(function()
-            gs.prev_hunk()
-          end)
-          return '<Ignore>'
-        end, { expr = true })
-
-        -- Actions
-        map({ 'n', 'v' }, '<leader>hs', ':Gitsigns stage_hunk<CR>')
-        map({ 'n', 'v' }, '<leader>hr', ':Gitsigns reset_hunk<CR>')
-        map('n', '<leader>hS', gs.stage_buffer)
-        map('n', '<leader>hu', gs.undo_stage_hunk)
-        map('n', '<leader>hR', gs.reset_buffer)
-        map('n', '<leader>hp', gs.preview_hunk)
-        map('n', '<leader>hb', function()
-          gs.blame_line { full = true }
-        end)
-        map('n', '<leader>tb', gs.toggle_current_line_blame)
-        map('n', '<leader>hd', gs.diffthis)
-        map('n', '<leader>hD', function()
-          gs.diffthis '~'
-        end)
-        map('n', '<leader>td', gs.toggle_deleted)
-
-        -- Text object
-        map({ 'o', 'x' }, 'ih', ':<C-U>Gitsigns select_hunk<CR>')
-      end,
-    },
-  },
-
-  { -- Treesitter
-    'nvim-treesitter/nvim-treesitter',
-    build = ':TSUpdate',
-    main = 'nvim-treesitter.configs',
-    opts = {
-      ensure_installed = {
-        'bash',
-        'c',
-        'diff',
-        'html',
-        'lua',
-        'luadoc',
-        'markdown',
-        'markdown_inline',
-        'query',
-        'vim',
-        'vimdoc',
-        'python',
-        'javascript',
-        'typescript',
-        'tsx',
-        'vue',
-        'css',
-        'scss',
-        'json',
-        'jsonc',
-        'yaml',
-        'toml',
-        'dockerfile',
-        'gitignore',
-        'comment',
-      },
-      auto_install = true,
-      highlight = {
-        enable = true,
-        additional_vim_regex_highlighting = { 'ruby' },
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-    },
   },
 
   { import = 'plugins' }, -- Load plugins from a separate file

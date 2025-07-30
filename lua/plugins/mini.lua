@@ -1,22 +1,20 @@
-return {
-  { -- Mini plugins
-    'echasnovski/mini.nvim',
-    config = function()
-      require('mini.ai').setup { n_lines = 500 }
-      require('mini.surround').setup()
+return { -- Mini plugins
+  'echasnovski/mini.nvim',
+  config = function()
+    require('mini.ai').setup { n_lines = 500 }
+    require('mini.surround').setup()
 
-      vim.opt.laststatus = 3 -- Use the last statusline
+    vim.opt.laststatus = 3 -- Use the last statusline
 
-      local statusline = require 'mini.statusline'
-      statusline.setup {
-        use_icons = vim.g.have_nerd_font,
-        set_vim_settings = false, -- Don't set Vim options automatically
-      }
+    local statusline = require 'mini.statusline'
+    statusline.setup {
+      use_icons = vim.g.have_nerd_font,
+      set_vim_settings = false, -- Don't set Vim options automatically
+    }
 
-      ---@diagnostic disable-next-line: duplicate-set-field
-      statusline.section_location = function()
-        return '%2l:%-2v'
-      end
-    end,
-  },
+    ---@diagnostic disable-next-line: duplicate-set-field
+    statusline.section_location = function()
+      return '%2l:%-2v'
+    end
+  end,
 }
