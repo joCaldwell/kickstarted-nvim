@@ -2,6 +2,8 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 vim.g.have_nerd_font = false
+vim.g.docker_service_name = 'web'
+vim.g.docker_debug = true
 
 -- LOCAL OPTIOINS
 vim.opt.number = true
@@ -88,22 +90,20 @@ vim.keymap.set('n', '<leader>fu', '<cmd>Telescope find_files search_dirs={"urls"
 vim.keymap.set('n', '<leader>ft', '<cmd>Telescope find_files search_dirs={"templates"}<CR>', { desc = '[F]ind [T]emplates' })
 vim.keymap.set('n', '<leader>fs', '<cmd>Telescope find_files search_dirs={"static"}<CR>', { desc = '[F]ind [S]tatic files' })
 
--- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
--- for people to discover. Otherwise, you normally need to press <C-\><C-n>.
--- NOTE: This won't work in all terminal emulators/tmux/etc.
+-- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier to discover.
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
-
--- Disable arrow keys in normal mode
-vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
-vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
-vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
-vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Split navigation
 vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+vim.keymap.set('n', '<leader>tt', function() -- Open terminal in a split window on the bottom
+  vim.cmd.new()
+  vim.cmd.term()
+  vim.api.nvim_win_set_height(0, 15)
+end, { desc = '[T]erminal' })
 
 -- Highlight when yanking text
 vim.api.nvim_create_autocmd('TextYankPost', {
@@ -156,13 +156,6 @@ vim.api.nvim_create_autocmd('TermOpen', {
   end,
 })
 
-vim.keymap.set('n', '<leader>tt', function()
-  -- Open terminal in a split window on the bottom
-  vim.cmd.new()
-  vim.cmd.term()
-  vim.api.nvim_win_set_height(0, 15) -- Set terminal height to 15 lines
-end, { desc = '[T]erminal' })
-
 -- Install lazy.nvim plugin manager
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -176,6 +169,9 @@ end
 ---@type vim.Option
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
+
+local docker_utils = require 'utils.docker'
+docker_utils.create_commands()
 
 -- TODO: Write a script to manage the theme
 local theme = require 'themes.tokyonight'
@@ -279,31 +275,7 @@ require('lazy').setup({
       local lspconfig = require 'lspconfig'
 
       -- Python/Django support
-      lspconfig.pyright.setup {
-        capabilities = capabilities,
-        settings = {
-          python = {
-            -- This should be set by your Docker functions, but fallback to local python
-            pythonPath = vim.g.python3_host_prog or vim.fn.exepath 'python3' or vim.fn.exepath 'python',
-            analysis = {
-              autoImportCompletions = true,
-              typeCheckingMode = 'basic',
-              useLibraryCodeForTypes = true,
-              diagnosticMode = 'workspace',
-              autoSearchPaths = true,
-              extraPaths = {
-                './',
-                './apps/',
-              },
-              inlayHints = {
-                functionReturnTypes = true,
-                variableTypes = true,
-                parameterTypes = true,
-              },
-            },
-          },
-        },
-      }
+      docker_utils.setup_pyright(lspconfig, capabilities)
 
       -- JavaScript/TypeScript support (for Vue)
       lspconfig.ts_ls.setup {
