@@ -2,8 +2,6 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 vim.g.have_nerd_font = false
-vim.g.docker_service_name = 'web'
-vim.g.docker_debug = true
 
 -- LOCAL OPTIOINS
 vim.opt.number = true
@@ -170,9 +168,6 @@ end
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
-local docker_utils = require 'utils.docker'
-docker_utils.create_commands()
-
 -- TODO: Write a script to manage the theme
 local theme = require 'themes.tokyonight'
 
@@ -273,9 +268,6 @@ require('lazy').setup({
 
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
       local lspconfig = require 'lspconfig'
-
-      -- Python/Django support
-      docker_utils.setup_pyright(lspconfig, capabilities)
 
       -- JavaScript/TypeScript support (for Vue)
       lspconfig.ts_ls.setup {
